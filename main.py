@@ -21,12 +21,14 @@ def load_param():
     return DSN
 
 class Publisher(Base):
+    """Класс таблицы Publisher"""    
     __tablename__ = "publisher" 
 
     id = sq.Column(sq.Integer, primary_key=True)
     name = sq.Column(sq.String(length=40), unique=True) 
 
 class Book(Base):
+    """Класс таблицы book"""
     __tablename__ = "book" 
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -35,6 +37,7 @@ class Book(Base):
     publisher = relationship(Publisher, backref="Books")       
 
 class Shop(Base):
+    """Класс таблицы shop"""
     __tablename__ = "shop" 
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -42,6 +45,7 @@ class Shop(Base):
    
 
 class Sale(Base):
+    """Класс таблицы salq"""
     __tablename__ = "sale" 
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -52,6 +56,7 @@ class Sale(Base):
    
 
 class Stock(Base):
+    """Класс таблицы stock"""
     __tablename__ = "stock" 
 
     id = sq.Column(sq.Integer, primary_key=True)
@@ -63,13 +68,16 @@ class Stock(Base):
     sale = relationship(Sale, backref="stock")  
 
 def create_tables(engine):
-    Base.metadata.create_all(engine) #Создание объектов 
+    """Функция создания таблиц в БД"""
+    Base.metadata.create_all(engine) #Создание объектов     
 
 def drop_tables(engine):
+    """Функция удаления таблиц в БД"""
     Base.metadata.drop_all(engine) #Удаление объектов
 
 
 def create_database_structure():
+    """Функция создания структуры БД"""
     dsn = load_param()
     engine = sqlalchemy.create_engine(dsn)
     engine.connect()
@@ -78,31 +86,37 @@ def create_database_structure():
     create_tables(engine)
 
 def add_publisher_rows(name_d):
+    """Функция добавления строки в таблицу publishe"""
     db_rows = Publisher(name=name_d)
     session.add(db_rows)
     session.commit()
 
 def add_book_rows(titel_d, id):
+    """Функция добавления строки в таблицу book"""
     db_rows = Book(titel=titel_d, id_publisher=id)
     session.add(db_rows)
     session.commit()
 
 def add_shop_rows(name_d):
+    """Функция добавления строки в таблицу shop"""
     db_rows = Shop(name=name_d)
     session.add(db_rows)
     session.commit()
 
 def add_stock_rows(id_b, id_s, count_d):
+    """Функция добавления строки в таблицу stock"""
     db_rows = Stock(count=count_d, id_book=id_b, id_shop=id_s)
     session.add(db_rows)
     session.commit()
 
 def add_sale_rows(price, date_sale, count, id_stock):
+    """Функция добавления строки в таблицу sale"""
     db_rows = Sale(price=price, date_sale=date_sale, count=count, id_stock =id_stock)
     session.add(db_rows)
     session.commit()
 
 def insert_data_from_file():
+    """Функция заполнения БД данными из файла tests_data.json"""
     data = {}
 
     with open("tests_data.json", "r") as read_file:
@@ -148,41 +162,36 @@ def insert_data_from_file():
                     par3 = int(r['fields'][x])    
                 elif x == 'id_stock':
                     par4 = int(r['fields'][x]) 
-                if count == len(r['fields']):
-                    pass                
+                if count == len(r['fields']):                                 
                     add_sale_rows(par1, par2, par3, par4)
         
             count += 1
 
+def select_shop_on_publisher(id_p, name_p):
+    """Функция поиска магазинов продающих автора с идентификатором id_p и по имени name_p"""
+    q = session.query(Publisher).filter(Publisher.id == id_p)
 
-create_database_structure()
-# сессия
-dsn = load_param()
-engine = sqlalchemy.create_engine(dsn)
-engine.connect()
-
-Session = sessionmaker(bind=engine)
-session = Session()
-
-insert_data_from_file()
-
+    if name_p == q.one().name:
+        q1 = session.query(Shop).join(Stock).join(Book).join(Publisher).filter(Publisher.id == id_p)
+        for s in q1.all():
+            print(s.id, s.name)
+    else:
+        print(f'Идентификатор {id_p} не соответсвует издателю {name_p}')
 
 
-# создание объектов
-#js = Course(name="JavaScript")
-#py = Course(name="Python")
+if __name__ == "__main__":
+    create_database_structure()
+    # сессия
+    dsn = load_param()
+    engine = sqlalchemy.create_engine(dsn)
+    engine.connect()
 
-#hw1 = Homework(number=1, description="первое задание", course=js)
-#hw2 = Homework(number=2, description="второе задание (сложное)", course=js)
-#hw3 = Homework(number=3, description="Третье задание (среднее)", course=js)
-#hw4 = Homework(number=4, description="Python task 1", course=py)
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
-#session.add(js)
-#session.add(py)
-#session.add_all([hw1, hw2, hw3, hw4])
-#session.commit()  # фиксируем изменения
-#print(js.id)
+    insert_data_from_file()
 
-    
-    #print(f'{res}({res1})')
-    
+    id_p = input('Введите дентификатор издателя>>')
+    name_p = input('Введите имя издателя>>')
+
+    select_shop_on_publisher(id_p, name_p)
