@@ -119,7 +119,7 @@ def insert_data_from_file():
     """Функция заполнения БД данными из файла tests_data.json"""
     data = {}
 
-    with open("tests_data.json", "r") as read_file:
+    with open("fixtures/tests_data.json", "r") as read_file:
         data = json.load(read_file)
 
     res1 = ''
